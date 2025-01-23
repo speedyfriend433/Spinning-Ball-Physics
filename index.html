@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bouncing Ball in Spinning Triangle</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const triangleSize = 300;
+    let triangleRotation = 0;
+    const rotationSpeed = 0.01;
+    const ballRadius = 15;
+    let ballPosition = { x: canvas.width / 2, y: canvas.height / 2 - 100 };
+    let ballVelocity = { x: 2, y: 2 };
+    const gravity = 0.1;
+
+    function getTriangleVertices(rotation) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const angle = (2 * Math.PI) / 3;
+
+      return Array.from({ length: 3 }, (_, i) => ({
+        x: centerX + triangleSize * Math.cos(rotation + i * angle),
+        y: centerY + triangleSize * Math.sin(rotation + i * angle),
+      }));
+    }
+
+    function drawTriangle(vertices) {
+      ctx.beginPath();
+      ctx.moveTo(vertices[0].x, vertices[0].y);
+      vertices.forEach(vertex => ctx.lineTo(vertex.x, vertex.y));
+      ctx.closePath();
+      ctx.strokeStyle = '#000';
+      ctx.stroke();
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ballPosition.x, ballPosition.y, ballRadius, 0, Math.PI * 2);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function checkCollision(vertices) {
+      for (let i = 0; i < vertices.length; i++) {
+        const p1 = vertices[i];
+        const p2 = vertices[(i + 1) % vertices.length];
+
+        // Vector of the edge
+        const edge = { x: p2.x - p1.x, y: p2.y - p1.y };
+        const normal = { x: -edge.y, y: edge.x };
+        const length = Math.sqrt(normal.x ** 2 + normal.y ** 2);
+        normal.x /= length;
+        normal.y /= length;
+
+        const ballToEdge = { x: ballPosition.x - p1.x, y: ballPosition.y - p1.y };
+        const distance = ballToEdge.x * normal.x + ballToEdge.y * normal.y;
+
+        if (distance < ballRadius) {
+
+          const dot = 2 * (ballVelocity.x * normal.x + ballVelocity.y * normal.y);
+          ballVelocity.x -= dot * normal.x;
+          ballVelocity.y -= dot * normal.y;
+          ballPosition.x += (ballRadius - distance) * normal.x;
+          ballPosition.y += (ballRadius - distance) * normal.y;
+        }
+      }
+    }
+
+    function updateBall() {
+      ballVelocity.y += gravity;
+      ballPosition.x += ballVelocity.x;
+      ballPosition.y += ballVelocity.y;
+
+      if (ballPosition.x < ballRadius || ballPosition.x > canvas.width - ballRadius) {
+        ballVelocity.x *= -1;
+      }
+      if (ballPosition.y < ballRadius || ballPosition.y > canvas.height - ballRadius) {
+        ballVelocity.y *= -1;
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      triangleRotation += rotationSpeed;
+      const vertices = getTriangleVertices(triangleRotation);
+     
+      drawTriangle(vertices);
+      updateBall();
+      checkCollision(vertices);
+      drawBall();
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
